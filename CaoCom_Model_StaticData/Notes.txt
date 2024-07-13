@@ -1,0 +1,22 @@
+Columns to Observe:
+
+case start time
+case duration
+
+age	sex	height	weight	bmi	asa	emop
+
+
+aline1, cline1
+
+intraop_ebl	intraop_uo	intraop_rbc	intraop_ffp	intraop_crystalloid	intraop_colloid	intraop_ppf	intraop_mdz	intraop_ftn	intraop_rocu	intraop_vecu	intraop_eph	intraop_phe	intraop_epi	intraop_ca
+
+
+optype	
+dx	: Maybe to General?
+
+
+opname: Should be broken into different parts: https://en.wikipedia.org/wiki/List_of_surgical_procedures  <- Next Step? ;)
+
+
+preop_htn	preop_dm	preop_ecg	preop_pft	preop_hb	preop_plt	preop_pt	preop_aptt	preop_na	preop_k	preop_gluc	preop_alb	preop_ast	preop_alt	preop_bun	preop_cr
+

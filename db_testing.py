@@ -12,7 +12,7 @@ track_names = ['Solar8000/NIBP_DBP',
                'Solar8000/NIBP_SBP']
 
 # vf = vitaldb.VitalFile(113, track_names)
-vf = vitaldb.VitalFile('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/vital_files/demo', track_names)
+vf = vitaldb.VitalFile('C:/Users/tilma/Documents/Entwicklung/CACOM/CAoCM_Vital/vital_files/demo', track_names)
 vf.to_vital('vital_files/demo')
 
 # %%
