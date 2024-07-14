@@ -52,9 +52,8 @@ def sortBy(data, col):
 
 data = getVitaDBData()
 
-col_occurence = 'dx'
+col_occurence = 'optype'
 occurence = occurenceCounter(data, col_occurence)
-print(occurence["esophageal cancer"])
 # Interesting cols: optype, dx
 
 # Store to Excel
@@ -62,6 +61,7 @@ df_occurence = pd.DataFrame(occurence, index=[0])
 df_occurence = (df_occurence.T)
 df_occurence.to_excel(f"occurence_{col_occurence}.xlsx")
 
+exit
 
 col_sort = 'icu_days'
 sorted = sortBy(data, col_sort)

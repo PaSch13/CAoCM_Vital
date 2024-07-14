@@ -1,22 +1,35 @@
 Columns to Observe:
 
+Initital Training File 03
+Features listed below are later on added
+
+1) 
 case start time
 case duration
 
+
+
+2) Init in 03
 age	sex	height	weight	bmi	asa	emop
 
 
+3)
 aline1, cline1
 
+4)
 intraop_ebl	intraop_uo	intraop_rbc	intraop_ffp	intraop_crystalloid	intraop_colloid	intraop_ppf	intraop_mdz	intraop_ftn	intraop_rocu	intraop_vecu	intraop_eph	intraop_phe	intraop_epi	intraop_ca
 
-
+5) 
 optype	
 dx	: Maybe to General?
 
-
+6) Added in 04
 opname: Should be broken into different parts: https://en.wikipedia.org/wiki/List_of_surgical_procedures  <- Next Step? ;)
+opname always as prefix and suffix -> Split opname into prefix and suffix to enhance detailed classificaiton
+-> Does not work opname does not follow basic structure: Occurence Table shows, most of the opname occur several times. Just use grouping as with gender.
+-> Observation Step: We might should not includes opnames with a low co-Occurence! Some have value 1 only.
+-> Results get much worse: Best result with Random Forest at 3,09 MSE
 
-
+7)
 preop_htn	preop_dm	preop_ecg	preop_pft	preop_hb	preop_plt	preop_pt	preop_aptt	preop_na	preop_k	preop_gluc	preop_alb	preop_ast	preop_alt	preop_bun	preop_cr
 
