@@ -3,6 +3,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import random
+import os
 
 def submit_data():
     age = age_entry.get()
@@ -10,9 +11,6 @@ def submit_data():
     sex = sex_entry.get()
     bmi = bmi_entry.get()
 
-    # Here you can add code to process the patient data
-    messagebox.showinfo("Patient Data", f"Age: {age}\nHeight: {height}\nSex: {sex}\nBMI: {bmi}")
-    
     # Generate a random number between 0 and 100 for complication possibility
     complication_possibility = random.randint(0, 100)
     complication_label.config(text=f"{complication_possibility} %")
@@ -36,7 +34,7 @@ root = tk.Tk()
 root.title("Patient Data Entry")
 
 # Configure the grid to be resizable
-for i in range(6):
+for i in range(8):
     root.grid_rowconfigure(i, weight=1)
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
@@ -64,15 +62,15 @@ bmi_entry.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
 
 # Submit Button
 submit_button = tk.Button(root, text="Submit", command=submit_data)
-submit_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="nsew")
+submit_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="nsew")
 
 # Upload File Button
 upload_button = tk.Button(root, text="Upload Patient Data File", command=upload_file)
-upload_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="nsew")
+upload_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="nsew")
 
 # Estimated Complication Possibility
 complication_frame = tk.Frame(root, bd=2, relief="groove")
-complication_frame.grid(row=0, column=2, rowspan=6, padx=10, pady=10, sticky="nsew")
+complication_frame.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="nsew")
 
 complication_headline = tk.Label(complication_frame, text="Estimated Complication Possibility", font=("Arial", 14))
 complication_headline.pack(pady=10)
@@ -80,9 +78,31 @@ complication_headline.pack(pady=10)
 complication_label = tk.Label(complication_frame, text="0 %", font=("Arial", 24), width=10, height=5)
 complication_label.pack(expand=True)
 
-# Load and resize images using Pillow
-image1_path = "/Users/patrickschneider/Downloads/tum_logo.png"
-image2_path = "/Users/patrickschneider/Downloads/images.png"
+# Further Details
+details_frame = tk.Frame(root, bd=2, relief="groove")
+details_frame.grid(row=3, column=2, rowspan=3, padx=10, pady=10, sticky="nsew")
+
+details_headline = tk.Label(details_frame, text="Further Details", font=("Arial", 14))
+details_headline.pack(pady=10)
+
+expected_icu_days_label = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 12))
+expected_icu_days_label.pack(pady=5)
+
+expected_icu_days_value = tk.Label(details_frame, text="0", font=("Arial", 12))
+expected_icu_days_value.pack(pady=5)
+
+second_detail_label = tk.Label(details_frame, text="Second Detail:", font=("Arial", 12))
+second_detail_label.pack(pady=5)
+
+second_detail_value = tk.Label(details_frame, text="Detail Value", font=("Arial", 12))
+second_detail_value.pack(pady=5)
+
+# Get the directory of this script
+script_dir = os.path.dirname(__file__)
+
+# Load and resize images using Pillow with relative paths
+image1_path = os.path.join(script_dir, "images/miti_logo.png")
+image2_path = os.path.join(script_dir, "images/tum_logo.png")
 
 image1 = Image.open(image1_path)
 image2 = Image.open(image2_path)
@@ -98,10 +118,10 @@ image2 = ImageTk.PhotoImage(image2)
 
 # Add image labels at the bottom on the right side, next to each other
 image_label1 = tk.Label(root, image=image1)
-image_label1.grid(row=6, column=2, sticky="e", padx=70, pady=5)
+image_label1.grid(row=6, column=2, sticky="e", padx=60, pady=5)
 
 image_label2 = tk.Label(root, image=image2)
-image_label2.grid(row=6, column=2, sticky="e", padx=10, pady=5)
+image_label2.grid(row=6, column=2, sticky="e", padx=5, pady=5)
 
 # Run the application
 root.mainloop()
