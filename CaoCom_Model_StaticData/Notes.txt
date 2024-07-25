@@ -33,3 +33,4 @@ opname always as prefix and suffix -> Split opname into prefix and suffix to enh
 7)
 preop_htn	preop_dm	preop_ecg	preop_pft	preop_hb	preop_plt	preop_pt	preop_aptt	preop_na	preop_k	preop_gluc	preop_alb	preop_ast	preop_alt	preop_bun	preop_cr
 
+preop_hb	preop_plt	preop_pt	preop_aptt	preop_na	preop_k	preop_gluc	preop_alb	preop_ast	preop_alt	preop_bun	preop_cr

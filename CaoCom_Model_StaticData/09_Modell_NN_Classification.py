@@ -11,10 +11,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 import tensorflow as tf
-
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
-
 
 
 def getVitaDBData():
@@ -46,38 +44,22 @@ def getVitaDBData():
         return None
 
 
-def occurenceCounter(data, col):
-    # Count the occurrences of each unique value in the "dx" column
-    value_counts = data[col].value_counts()
-    # Convert the result to a dictionary
-    value_counts_dict = value_counts.to_dict()
-    print(f"Value counts for column {col}:")
-    print(value_counts_dict)
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 
-    return value_counts_dict
-
-def sortBy(data, col):
-    # Sort the DataFrame by the col column in descending order
-    df_sorted = data.sort_values(by=col, ascending=False)
-    
-    print("\nDataFrame sorted by column 'xy' in descending order:")
-    print(df_sorted[['optype', 'dx', 'opname', 'approach', col]])
-
-    return df_sorted
-
-#
-#   Implementation of the NN
-#
-def create_nn_model(input_dim):
+# Define and compile the model
+def create_classification_model(input_dim):
     model = Sequential([
         Dense(64, activation='relu', input_dim=input_dim),
         Dropout(0.2),
         Dense(32, activation='relu'),
-        Dense(1)  # Output layer, no activation function (for regression)
+        Dense(1, activation='sigmoid')  # Output layer with sigmoid activation for binary classification
     ])
     
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
+
 
 
 
@@ -86,14 +68,20 @@ df = getVitaDBData()
 # Convert 'sex' column to numeric values: 'm' -> 1, 'f' -> 0
 df['sex'] = df['sex'].map({'m': 1, 'f': 0})
 
+# Convert 'opname' column to numeric values:
+unique_values = df['opname'].unique()
+mapping_dict = {value: index for index, value in enumerate(unique_values)}
+df['opname'] = df['opname'].map(mapping_dict)
+
+# Convert 'dx' column to numeric values:
+unique_values = df['dx'].unique()
+mapping_dict = {value: index for index, value in enumerate(unique_values)}
+df['dx'] = df['dx'].map(mapping_dict)
+
 # Convert 'optype' column to numeric values:
 unique_values = df['optype'].unique()
 mapping_dict = {value: index for index, value in enumerate(unique_values)}
 df['optype'] = df['optype'].map(mapping_dict)
-
-print(mapping_dict)
-
-print(unique_values)
 
 # Convert 'position' column to numeric values:
 unique_values = df['position'].unique()
@@ -108,58 +96,70 @@ df = df.dropna(subset=columns_to_check)
 print(f"Number of rows in the cleaned dataset: {df.shape[0]}")
 print(f"Number of columns in the cleaned dataset: {df.shape[1]}")
 
-# Define features (X) and target (y)
-X = df[columns_to_check].values
-y = df['icu_days'].values
+# Transform target variable: 0 if ICU_Days <= 1, 1 if ICU_Days > 1
+df['ICU_Class'] = np.where(df['icu_days'] <= 1, 0, 1)
+
+# Inspect the class distribution
+print(df['ICU_Class'].value_counts())
+# Separate the majority and minority classes
+df_majority = df[df['ICU_Class'] == 0]
+df_minority = df[df['ICU_Class'] == 1]
+# Undersample the majority class
+df_majority_undersampled = df_majority.sample(len(df_minority), random_state=42)
+# Combine the undersampled majority class with the minority class
+df_balanced = pd.concat([df_majority_undersampled, df_minority])
+# Shuffle the resulting DataFrame
+df_balanced = df_balanced.sample(frac=1, random_state=42).reset_index(drop=True)
+# Inspect the class distribution to confirm balancing
+print(df_balanced['ICU_Class'].value_counts())
+
+df = df_balanced
+
+# Define features (X) and new target (y)
+X = df[['age', 'sex', 'height', 'weight', 'bmi', 'asa', 'emop']].values
+y = df['ICU_Class'].values
 
 # Split data into training and testing sets
+from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Standardize the features (mean=0 and variance=1)
+from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 
-
 # Create the model
 input_dim = X_train_scaled.shape[1]  # Number of features
-model = create_nn_model(input_dim)
+model = create_classification_model(input_dim)
 
 # Display model architecture
 model.summary()
 
 
+# Early stopping to prevent overfitting
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
 # Train the model
-history = model.fit(X_train_scaled, y_train, epochs=50, batch_size=32, validation_data=(X_test_scaled, y_test), verbose=1)
+history = model.fit(X_train_scaled, y_train, epochs=50, batch_size=32, 
+                    validation_data=(X_test_scaled, y_test), callbacks=[early_stopping], verbose=1)
+
+
+
 
 # Evaluate the model
-y_pred = model.predict(X_test_scaled).flatten()
+y_pred_proba = model.predict(X_test_scaled).flatten()
+y_pred = (y_pred_proba > 0.5).astype(int)
 
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
-def mean_absolute_error(y_true, y_pred):
-    return np.mean(np.abs(y_true - y_pred))
-mae = mean_absolute_error(y_test, np.abs(y_pred))
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+class_report = classification_report(y_test, y_pred)
 
-print(f"Mean Squared Error (MSE): {mse}")
-print(f"R-squared (R2): {r2}")
-print(f"Mean Absolute Error (MAE): {mae}")
-
-
-
-
-import matplotlib.pyplot as plt
-
-# Plot training & validation loss values
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('Model loss')
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Validation'], loc='upper right')
-plt.show()
-
-# Save the trained model
-model.save('model_predictor/icu_predictor_model.h5')
+print(f"Accuracy: {accuracy}")
+print("Confusion Matrix:")
+print(conf_matrix)
+print("Classification Report:")
+print(class_report)
