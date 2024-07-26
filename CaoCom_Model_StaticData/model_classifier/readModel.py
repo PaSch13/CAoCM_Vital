@@ -2,8 +2,8 @@ import joblib
 import numpy as np
 
 # Load the model and scaler
-gb_clf_loaded = joblib.load('gradient_boosting_model.pkl')
-scaler_loaded = joblib.load('scaler.pkl')
+gb_clf_loaded = joblib.load('CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
+scaler_loaded = joblib.load('CaoCom_Model_StaticData/model_classifier/scaler.pkl')
 
 # Function to preprocess new data
 def preprocess_new_data(data):

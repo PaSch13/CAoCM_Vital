@@ -4,11 +4,13 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 # Load the model
-model = tf.keras.models.load_model('icu_predictor_model.h5')
+model = tf.keras.models.load_model('CaoCom_Model_StaticData/model_predictor/icu_predictor_model.h5')
 
 columns_to_check = ['age', 'sex', 'height', 'weight', 'bmi', 'asa', 'emop', 'optype']
 
-dataframe_newData = # ?!?!!?
+x = input("...")
+
+dataframe_newData = 5 # ?!?!!?
 
 # @Patrick bitte Werte umwandeln:
 # 1) Mann: 1, Frau: 0
