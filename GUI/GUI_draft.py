@@ -4,16 +4,109 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import random
 import os
+import numpy as np
+import pickle
+import joblib
+import numpy as np
+import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
 
 def submit_data():
-    age = age_entry.get()
-    height = height_entry.get()
-    sex = sex_entry.get()
-    bmi = bmi_entry.get()
+    # Get input data
+    age = age_entry[0].get()
+    sex = sex_entry[0].get()
+    height = height_entry[0].get()
+    weight = weight_entry[0].get()
+    asa = asa_entry[0].get()
+    emop = emop_entry[0].get()
+    opttype = opttype_entry[0].get()
 
+    try:
+        bmi = int(weight) / ((int(height) / 100) ** 2)
+    except:
+        bmi = 25
+
+    # Prepare the data list
+    data_list = [age, sex, height, weight, bmi, asa, emop, opttype]
+
+    # Handle missing values
+    for idx, entry in enumerate(data_list):
+        if entry == "":
+            data_list[idx] = 0
+
+    # Convert sex to binary
+    if sex.lower() in ['male', 'm']:
+        data_list[1] = 1
+    else:
+        data_list[1] = 0
+
+    # Define the operation type dictionary
+    optype_dict = {
+        'colorectal': 0,
+        'stomach': 1,
+        'biliary/pancreas': 2,
+        'vascular': 3,
+        'major resection': 4,
+        'breast': 5,
+        'minor resection': 6,
+        'transplantation': 7,
+        'hepatic': 8,
+        'thyroid': 9,
+        'others': 10,
+        '': 11
+    }
+
+    # Map operation type to number
+    if opttype.lower() in optype_dict:
+        data_list[-1] = optype_dict[opttype.lower()]
+    else:
+        raise ValueError(f"Operation type '{opttype}' is not recognized.")
+
+    # Convert all elements to float and ensure dtype is float64
+    data_list = np.array([float(i) for i in data_list], dtype=np.float64)
+
+    # Ensure the data shape is correct
+    if data_list.shape != (8,):
+        raise ValueError(f"Input data must have shape (8,), but got shape {data_list.shape}")
+
+    # Load the models
+    model_comp_proba = joblib.load('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
+    model_icu_days = tf.keras.models.load_model('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_predictor/icu_predictor_model.h5')
+
+    # Make complication prediction
+    complication_possibility = model_comp_proba.predict_proba(data_list[:-1].reshape(1, -1))[0][1]*100
+
+    # Set color based on value
+    if complication_possibility < 25:
+        fg="green"
+    elif complication_possibility < 50:
+        fg="yellow"
+    else:
+        fg="red"
+
+    # Update the complication label
+    complication_label.config(text=f"{complication_possibility:.1f} %", fg=fg)
+
+    # Preprocess the new data
+    scaler = StandardScaler()
+    df_new_scaled = scaler.fit_transform(data_list.reshape(1, -1))
+
+
+    # ICU prediction
+    icu_days_predictions = model_icu_days.predict(df_new_scaled).flatten()[0]
+    
+    # update the expected ICU days label
+    expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
+
+
+def submit_data_files():
     # Generate a random number between 0 and 100 for complication possibility
+    
+
     complication_possibility = random.randint(0, 100)
-    complication_label.config(text=f"{complication_possibility} %")
+    complication_label.config(text=f"{complication_possibility[1]} %")
     
     # Set color based on value
     if complication_possibility < 25:
@@ -29,73 +122,154 @@ def upload_file():
         # Here you can add code to process the uploaded file
         messagebox.showinfo("File Uploaded", f"File uploaded: {file_path}")
 
+def change_layout(event):
+    selected_layout = layout_var.get()
+    if selected_layout == "Layout 1":
+        show_layout1()
+    elif selected_layout == "Layout 2":
+        show_layout2()
+
+def show_layout1():
+    # Show all elements for layout 1
+    for widget in layout2_widgets:
+        widget[0].grid_remove()
+    for widget in layout2_widgets:
+        widget[1].grid_remove()
+    for widget in layout1_widgets:
+        widget[0].grid()
+    for widget in layout1_widgets:
+        widget[1].grid()
+    upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=(10, 0), sticky="nsew")
+
+def show_layout2():
+    # Hide all elements for layout 1 except submit button, add upload buttons
+    for widget in layout1_widgets:
+        widget[0].grid_remove()
+    for widget in layout1_widgets:
+        widget[1].grid_remove()
+    for widget in layout2_widgets:
+        widget[0].grid()
+    for widget in layout2_widgets:
+        widget[1].grid()
+    upload_button.grid_remove()
+
 # Create the main window
 root = tk.Tk()
 root.title("Patient Data Entry")
 
 # Configure the grid to be resizable
-for i in range(8):
+for i in range(10):
     root.grid_rowconfigure(i, weight=1)
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 root.grid_columnconfigure(2, weight=2)
 
-# Age
-tk.Label(root, text="Age:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
-age_entry = tk.Entry(root)
-age_entry.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+# Layout Selection Dropdown
+layout_var = tk.StringVar(value="Layout 1")
+layout_dropdown = tk.OptionMenu(root, layout_var, "Layout 1", "Layout 2", command=change_layout)
+label = tk.Label(root, text="Algorithm:")
+label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
+layout_dropdown.grid(row=0, column=1, padx=10, pady=10, ipady=5, sticky="nsew")
+layout_dropdown.config(fg="black")  # Change font color to black
 
-# Height
-tk.Label(root, text="Height (cm):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
-height_entry = tk.Entry(root)
-height_entry.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+# Access the menu of the OptionMenu to change its item colors
+menu = root.nametowidget(layout_dropdown.menuname)
+menu.config(fg="black")  # Change font color of menu items to black
+
+# Uniform padding and size configuration for entries
+entry_padx = 10
+entry_pady = 10
+entry_ipady = 5
+
+# Helper function to create labels and entries
+def create_label_entry(row, text):
+    label = tk.Label(root, text=text)
+    label.grid(row=row, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
+    entry = tk.Entry(root)
+    entry.grid(row=row, column=1, padx=entry_padx, pady=entry_pady, ipady=entry_ipady, sticky="nsew")
+    return [entry,label]
+
+# Age
+age_entry = create_label_entry(1, "Age:")
 
 # Sex
-tk.Label(root, text="Sex:").grid(row=2, column=0, padx=10, pady=10, sticky="e")
-sex_entry = tk.Entry(root)
-sex_entry.grid(row=2, column=1, padx=10, pady=10, sticky="nsew")
+sex_entry = create_label_entry(2, "Sex:")
 
-# BMI
-tk.Label(root, text="BMI:").grid(row=3, column=0, padx=10, pady=10, sticky="e")
-bmi_entry = tk.Entry(root)
-bmi_entry.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
+# Height
+height_entry = create_label_entry(3, "Height (cm):")
+
+# Weight
+weight_entry = create_label_entry(4, "Weight (kg):")
+
+# # BMI
+# bmi_entry = create_label_entry(5, "BMI:")
+
+# ASA
+asa_entry = create_label_entry(5, "ASA:")
+
+# EMOP
+emop_entry = create_label_entry(6, "EMOP:")
+
+# Operation Type
+opttype_entry = create_label_entry(7, "Operation Type:")
 
 # Submit Button
 submit_button = tk.Button(root, text="Submit", command=submit_data)
-submit_button.grid(row=4, column=0, columnspan=2, pady=10, sticky="nsew")
+submit_button.grid(row=8, column=1, columnspan=1, pady=entry_pady, padx=(10, 0), sticky="nsew")
 
-# Upload File Button
+# Submit Files Button
+submit_button_files = tk.Button(root, text="Submit Files", command=submit_data_files)
+submit_button_files.grid(row=8, column=1, columnspan=1, pady=entry_pady, padx=(10, 0), sticky="nsew")
+
+# Upload File Button (to be removed in Layout 2)
 upload_button = tk.Button(root, text="Upload Patient Data File", command=upload_file)
-upload_button.grid(row=5, column=0, columnspan=2, pady=10, sticky="nsew")
+upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=(10, 0), sticky="nsew")
+
+# Upload File Buttons for Layout 2
+label_upload_file_button1 = tk.Label(root, text="Patient Data File 1")
+label_upload_file_button1.grid(row=1, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
+upload_file_button1 = tk.Button(root, text="File 1", command=upload_file)
+
+label_upload_file_button2 = tk.Label(root, text="Patient Data File 2")
+label_upload_file_button2.grid(row=2, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
+upload_file_button2 = tk.Button(root, text="File 2", command=upload_file)
 
 # Estimated Complication Possibility
-complication_frame = tk.Frame(root, bd=2, relief="groove")
-complication_frame.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="nsew")
+complication_frame = tk.Frame(root, bd=2)
+complication_frame.grid(row=1, column=2, rowspan=2, padx=entry_padx, pady=entry_pady, sticky="nsew")
 
-complication_headline = tk.Label(complication_frame, text="Estimated Complication Possibility", font=("Arial", 14))
+complication_headline = tk.Label(complication_frame, text="Estimated Complication Possibility", font=("Arial", 18))
 complication_headline.pack(pady=10)
 
-complication_label = tk.Label(complication_frame, text="0 %", font=("Arial", 24), width=10, height=5)
+complication_label = tk.Label(complication_frame, text="0 %", font=("Arial", 34), width=0, height=0)
 complication_label.pack(expand=True)
 
 # Further Details
-details_frame = tk.Frame(root, bd=2, relief="groove")
-details_frame.grid(row=3, column=2, rowspan=3, padx=10, pady=10, sticky="nsew")
+details_frame = tk.Frame(root, bd=2)
+details_frame.grid(row=4, column=2, rowspan=3, padx=entry_padx, pady=entry_pady, sticky="nsew")
 
-details_headline = tk.Label(details_frame, text="Further Details", font=("Arial", 14))
+details_headline = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 18))
 details_headline.pack(pady=10)
 
-expected_icu_days_label = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 12))
+expected_icu_days_label = tk.Label(details_frame, text="0", font=("Arial", 18))
 expected_icu_days_label.pack(pady=5)
 
-expected_icu_days_value = tk.Label(details_frame, text="0", font=("Arial", 12))
-expected_icu_days_value.pack(pady=5)
+# Widgets for layout 1
+layout1_widgets = [age_entry, sex_entry, height_entry, weight_entry, asa_entry, emop_entry, opttype_entry, [submit_button, submit_button]]
 
-second_detail_label = tk.Label(details_frame, text="Second Detail:", font=("Arial", 12))
-second_detail_label.pack(pady=5)
+# Widgets for layout 2
+layout2_widgets = [[upload_file_button1, label_upload_file_button1], [upload_file_button2, label_upload_file_button2], [submit_button_files, submit_button_files]]
 
-second_detail_value = tk.Label(details_frame, text="Detail Value", font=("Arial", 12))
-second_detail_value.pack(pady=5)
+upload_file_button1.grid(row=1, column=1, pady=entry_pady, padx=entry_padx, sticky="nsew")
+upload_file_button2.grid(row=2, column=1, pady=entry_pady, padx=entry_padx, sticky="nsew")
+
+# Hide layout 2 widgets initially
+for widget in layout2_widgets:
+    widget[0].grid_remove()
+    widget[1].grid_remove()
+
+# Show layout 1 by default
+show_layout1()
 
 # Get the directory of this script
 script_dir = os.path.dirname(__file__)
@@ -118,10 +292,10 @@ image2 = ImageTk.PhotoImage(image2)
 
 # Add image labels at the bottom on the right side, next to each other
 image_label1 = tk.Label(root, image=image1)
-image_label1.grid(row=6, column=2, sticky="e", padx=60, pady=5)
+image_label1.grid(row=9, column=2, sticky="e", padx=60, pady=5)
 
 image_label2 = tk.Label(root, image=image2)
-image_label2.grid(row=6, column=2, sticky="e", padx=5, pady=5)
+image_label2.grid(row=9, column=2, sticky="e", padx=5, pady=5)
 
 # Run the application
 root.mainloop()
