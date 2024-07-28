@@ -5,13 +5,12 @@ from PIL import Image, ImageTk
 import random
 import os
 import numpy as np
-import pickle
 import joblib
-import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
+selected_file_path = ""
 
 def submit_data():
     # Get input data
@@ -93,7 +92,6 @@ def submit_data():
     scaler = StandardScaler()
     df_new_scaled = scaler.fit_transform(data_list.reshape(1, -1))
 
-
     # ICU prediction
     icu_days_predictions = model_icu_days.predict(df_new_scaled).flatten()[0]
     
@@ -102,11 +100,16 @@ def submit_data():
 
 
 def submit_data_files():
+    global selected_file_path
+    # Load the CSV file into a DataFrame
+    try:
+        df = pd.read_csv(selected_file_path)
+    except Exception as e:
+        messagebox.showerror("Error", f"Choose a valid CSV file: {e}")
+        return
     # Generate a random number between 0 and 100 for complication possibility
-    
-
     complication_possibility = random.randint(0, 100)
-    complication_label.config(text=f"{complication_possibility[1]} %")
+    complication_label.config(text=f"{complication_possibility} %")
     
     # Set color based on value
     if complication_possibility < 25:
@@ -117,10 +120,16 @@ def submit_data_files():
         complication_label.config(fg="red")
 
 def upload_file():
+    global selected_file_path
     file_path = filedialog.askopenfilename()
     if file_path:
-        # Here you can add code to process the uploaded file
-        messagebox.showinfo("File Uploaded", f"File uploaded: {file_path}")
+        selected_file_path = file_path
+        file_name = os.path.basename(file_path)
+        selected_file_entry.config(state='normal')
+        selected_file_entry.delete(0, tk.END)
+        selected_file_entry.insert(0, file_name)
+        selected_file_entry.config(state='readonly')
+        # messagebox.showinfo("File Uploaded", f"File uploaded: {file_path}")
 
 def change_layout(event):
     selected_layout = layout_var.get()
@@ -152,6 +161,8 @@ def show_layout2():
     for widget in layout2_widgets:
         widget[1].grid()
     upload_button.grid_remove()
+    selected_file_label.grid(row=2, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
+    selected_file_entry.grid(row=2, column=1, padx=entry_padx, pady=entry_pady, ipady=entry_ipady, sticky="nsew")
 
 # Create the main window
 root = tk.Tk()
@@ -219,20 +230,20 @@ submit_button.grid(row=8, column=1, columnspan=1, pady=entry_pady, padx=(10, 0),
 
 # Submit Files Button
 submit_button_files = tk.Button(root, text="Submit Files", command=submit_data_files)
-submit_button_files.grid(row=8, column=1, columnspan=1, pady=entry_pady, padx=(10, 0), sticky="nsew")
+submit_button_files.grid(row=8, column=1, columnspan=1, pady=entry_pady, padx=entry_padx, sticky="nsew")
 
 # Upload File Button (to be removed in Layout 2)
 upload_button = tk.Button(root, text="Upload Patient Data File", command=upload_file)
-upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=(10, 0), sticky="nsew")
+upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=entry_padx, sticky="nsew")
 
 # Upload File Buttons for Layout 2
 label_upload_file_button1 = tk.Label(root, text="Patient Data File 1")
 label_upload_file_button1.grid(row=1, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
 upload_file_button1 = tk.Button(root, text="File 1", command=upload_file)
 
-label_upload_file_button2 = tk.Label(root, text="Patient Data File 2")
-label_upload_file_button2.grid(row=2, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
-upload_file_button2 = tk.Button(root, text="File 2", command=upload_file)
+# Label and Entry for displaying selected file name
+selected_file_label = tk.Label(root, text="Selected file:")
+selected_file_entry = tk.Entry(root, state='readonly', bd=0, highlightthickness=0)
 
 # Estimated Complication Possibility
 complication_frame = tk.Frame(root, bd=2)
@@ -258,10 +269,13 @@ expected_icu_days_label.pack(pady=5)
 layout1_widgets = [age_entry, sex_entry, height_entry, weight_entry, asa_entry, emop_entry, opttype_entry, [submit_button, submit_button]]
 
 # Widgets for layout 2
-layout2_widgets = [[upload_file_button1, label_upload_file_button1], [upload_file_button2, label_upload_file_button2], [submit_button_files, submit_button_files]]
+layout2_widgets = [
+    [upload_file_button1, label_upload_file_button1],
+    [submit_button_files, submit_button_files],
+    [selected_file_entry, selected_file_label]
+]
 
 upload_file_button1.grid(row=1, column=1, pady=entry_pady, padx=entry_padx, sticky="nsew")
-upload_file_button2.grid(row=2, column=1, pady=entry_pady, padx=entry_padx, sticky="nsew")
 
 # Hide layout 2 widgets initially
 for widget in layout2_widgets:
