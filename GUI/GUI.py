@@ -10,6 +10,12 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from timeseries_predict import predict_icu_days_from_data
+
 selected_file_path = ""
 selected_patient_data_path = ""
 
@@ -94,12 +100,8 @@ def submit_data():
     # Update the complication label
     complication_label.config(text=f"{complication_possibility:.1f} %", fg=fg)
 
-    # # Preprocess the new data
-    # scaler = StandardScaler()
-    # df_new_scaled = scaler.fit_transform(data_list.reshape(1, -1))
-
     # ICU prediction
-    icu_days_predictions = model_icu_days.predict(data_list.reshape(1, -1)).flatten()[0] #TODO: check prediction/df_new_scaled
+    icu_days_predictions = model_icu_days.predict(data_list.reshape(1, -1)).flatten()[0]
     
     # update the expected ICU days label
     expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
@@ -114,19 +116,11 @@ def submit_data_files():
         messagebox.showerror("Error", f"Choose a valid CSV file: {e}")
         return
     
-    #TODO: Call classifier from Michael and return complication possibility
+    icu_days_predictions =  predict_icu_days_from_data(df)
 
-    # Generate a random number between 0 and 100 for complication possibility
-    complication_possibility = random.randint(0, 100)
-    complication_label.config(text=f"{complication_possibility} %")
-    
-    # Set color based on value
-    if complication_possibility < 25:
-        complication_label.config(fg="green")
-    elif complication_possibility < 50:
-        complication_label.config(fg="yellow")
-    else:
-        complication_label.config(fg="red")
+    # update the expected ICU days label
+    expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
+    complication_label.config(text=f"/", fg="white")
 
 def upload_file():
     global selected_file_path
@@ -169,9 +163,9 @@ def upload_patient_data(layout1_widgets):
 
 def change_layout(event):
     selected_layout = layout_var.get()
-    if selected_layout == "Layout 1":
+    if selected_layout == "General":
         show_layout1()
-    elif selected_layout == "Layout 2":
+    elif selected_layout == "Timeseries":
         show_layout2()
 
 def show_layout1():
@@ -214,7 +208,7 @@ root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fil
 
 # Layout Selection Dropdown
 layout_var = tk.StringVar(value="General")
-layout_dropdown = tk.OptionMenu(root, layout_var, "General", "Layout 2", command=change_layout)
+layout_dropdown = tk.OptionMenu(root, layout_var, "General", "Timeseries", command=change_layout)
 label = tk.Label(root, text="Algorithm:")
 label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
 layout_dropdown.grid(row=0, column=1, padx=10, pady=10, ipady=5, sticky="nsew")
