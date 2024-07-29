@@ -23,10 +23,9 @@ def submit_data():
     emop = emop_entry[0].get()
     opttype = opttype_entry[0].get()
 
-    try:
-        bmi = int(weight) / ((int(height) / 100) ** 2)
-    except:
-        bmi = 25
+
+    bmi = float(weight) / ((float(height) / 100) ** 2)
+
 
     # Prepare the data list
     data_list = [age, sex, height, weight, bmi, asa, emop, opttype]
@@ -75,11 +74,14 @@ def submit_data():
     model_comp_proba = joblib.load('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
     model_icu_days = tf.keras.models.load_model('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_predictor/icu_predictor_model.h5')
 
-    # Recompile the ICU days model if necessary
-    model_icu_days.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    # # Recompile the ICU days model if necessary
+    # model_icu_days.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+
+    scaler_loaded = joblib.load('CaoCom_Model_StaticData/model_classifier/scaler.pkl')
+    data_list_reduced = scaler_loaded.transform([data_list[:-1]])  # Ensure data is in a 2D array  
 
     # Make complication prediction
-    complication_possibility = model_comp_proba.predict_proba(data_list[:-1].reshape(1, -1))[0][1]*100
+    complication_possibility = model_comp_proba.predict_proba(data_list_reduced[0].reshape(1, -1))[0][1]*100
 
     # Set color based on value
     if complication_possibility < 25:
@@ -208,11 +210,11 @@ for i in range(10):
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 root.grid_columnconfigure(2, weight=0)  # Ensure column 2 doesn't expand
-root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fill space
+root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fill∂ space
 
 # Layout Selection Dropdown
-layout_var = tk.StringVar(value="Layout 1")
-layout_dropdown = tk.OptionMenu(root, layout_var, "Layout 1", "Layout 2", command=change_layout)
+layout_var = tk.StringVar(value="General")
+layout_dropdown = tk.OptionMenu(root, layout_var, "General", "Layout 2", command=change_layout)
 label = tk.Label(root, text="Algorithm:")
 label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
 layout_dropdown.grid(row=0, column=1, padx=10, pady=10, ipady=5, sticky="nsew")
