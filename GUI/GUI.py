@@ -100,12 +100,6 @@ def submit_data():
     # Update the complication label
     complication_label.config(text=f"{complication_possibility:.1f} %", fg=fg)
 
-    # ICU prediction
-    icu_days_predictions = model_icu_days.predict(data_list.reshape(1, -1)).flatten()[0]
-    
-    # update the expected ICU days label
-    expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
-
 
 def submit_data_files():
     global selected_file_path
@@ -119,8 +113,7 @@ def submit_data_files():
     icu_days_predictions =  predict_icu_days_from_data(df)
 
     # update the expected ICU days label
-    expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
-    complication_label.config(text=f"/", fg="white")
+    complication_label.config(text=f"{icu_days_predictions:.1f}")
 
 def upload_file():
     global selected_file_path
@@ -163,9 +156,9 @@ def upload_patient_data(layout1_widgets):
 
 def change_layout(event):
     selected_layout = layout_var.get()
-    if selected_layout == "General":
+    if selected_layout == "Complication":
         show_layout1()
-    elif selected_layout == "Timeseries":
+    elif selected_layout == "ICU Days":
         show_layout2()
 
 def show_layout1():
@@ -179,6 +172,8 @@ def show_layout1():
     for widget in layout1_widgets:
         widget[1].grid()
     upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=(10, 0), sticky="nsew")
+    complication_headline.config(text="Complication Probability", font=("Arial", 18))
+    complication_label.config(text="0 %", font=("Arial", 34), fg="white")
 
 def show_layout2():
     # Hide all elements for layout 1 except submit button, add upload buttons
@@ -193,6 +188,8 @@ def show_layout2():
     upload_button.grid_remove()
     selected_file_label.grid(row=2, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
     selected_file_entry.grid(row=2, column=1, padx=entry_padx, pady=entry_pady, ipady=entry_ipady, sticky="nsew")
+    complication_headline.config(text="Expected ICU Days", font=("Arial", 18))
+    complication_label.config(text="0", font=("Arial", 34), fg="white")
 
 # Create the main window
 root = tk.Tk()
@@ -207,8 +204,8 @@ root.grid_columnconfigure(2, weight=0)  # Ensure column 2 doesn't expand
 root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fill∂ space
 
 # Layout Selection Dropdown
-layout_var = tk.StringVar(value="General")
-layout_dropdown = tk.OptionMenu(root, layout_var, "General", "Timeseries", command=change_layout)
+layout_var = tk.StringVar(value="Complication")
+layout_dropdown = tk.OptionMenu(root, layout_var, "Complication", "ICU Days", command=change_layout)
 label = tk.Label(root, text="Algorithm:")
 label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
 layout_dropdown.grid(row=0, column=1, padx=10, pady=10, ipady=5, sticky="nsew")
@@ -286,15 +283,15 @@ complication_headline.pack(pady=10)
 complication_label = tk.Label(complication_frame, text="0 %", font=("Arial", 34), width=0, height=0)
 complication_label.pack(expand=True)
 
-# Further Details
-details_frame = tk.Frame(root, bd=2)
-details_frame.grid(row=4, column=2, rowspan=3, padx=entry_padx, pady=entry_pady, sticky="nsew")
+# # Further Details
+# details_frame = tk.Frame(root, bd=2)
+# details_frame.grid(row=4, column=2, rowspan=3, padx=entry_padx, pady=entry_pady, sticky="nsew")
 
-details_headline = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 18))
-details_headline.pack(pady=10)
+# details_headline = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 18))
+# details_headline.pack(pady=10)
 
-expected_icu_days_label = tk.Label(details_frame, text="0", font=("Arial", 18))
-expected_icu_days_label.pack(pady=5)
+# expected_icu_days_label = tk.Label(details_frame, text="0", font=("Arial", 18))
+# expected_icu_days_label.pack(pady=5)
 
 # Widgets for layout 2
 layout2_widgets = [
