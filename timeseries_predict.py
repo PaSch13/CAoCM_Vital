@@ -17,7 +17,10 @@ def predict_icu_days_from_data(patient_data) -> float:
     # missing_columns = [col for col in patient_data.columns if col not in existing_columns]
     # print(f"Missing columns: {missing_columns}")
     # drop time
-    patient_data = patient_data.drop(columns=["time"])
+    try:
+        patient_data = patient_data.drop(columns=["time"])
+    except:
+        pass
 
     # Standardize the data
     scaler = StandardScaler()

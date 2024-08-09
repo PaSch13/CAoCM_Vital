@@ -101,7 +101,7 @@ model.add(Dropout(0.2))
 model.add(Dense(1))
 
 model.compile(optimizer="adam", loss="mse")
-# Evaluate the model
+# Evaluate the model and repeat this multiple times for batches
 loss = model.evaluate(X_test, y_test, verbose=2)
 print(f"Untrained Mean Squared Error: {loss}")
 # Train the model
