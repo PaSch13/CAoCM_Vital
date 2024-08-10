@@ -136,6 +136,10 @@ history = model.fit(X_train_scaled, y_train, epochs=50, batch_size=32, validatio
 # Evaluate the model
 y_pred = model.predict(X_test_scaled).flatten()
 
+for p in y_pred:
+    if p > 10:
+        print(p)
+
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 

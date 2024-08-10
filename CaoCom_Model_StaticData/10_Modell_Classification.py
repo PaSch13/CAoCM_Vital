@@ -44,6 +44,8 @@ y_balanced = df_balanced['ICU_Class'].values
 
 X_train_balanced, X_test_balanced, y_train_balanced, y_test_balanced = train_test_split(X_balanced, y_balanced, test_size=0.2, random_state=42)
 
+
+
 scaler = StandardScaler()
 X_train_balanced_scaled = scaler.fit_transform(X_train_balanced)
 X_test_balanced_scaled = scaler.transform(X_test_balanced)
@@ -98,10 +100,11 @@ for clf_name, importances in feature_importances.items():
 
 
 
+
 # Save the model
 gb_clf = classifiers['Gradient Boosting']
-joblib.dump(gb_clf, 'model_classifier/gradient_boosting_model.pkl')
-joblib.dump(scaler, 'model_classifier/scaler.pkl')
+joblib.dump(gb_clf, 'CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
+joblib.dump(scaler, 'CaoCom_Model_StaticData/model_classifier/scaler.pkl')
 
 
 # Print mappings

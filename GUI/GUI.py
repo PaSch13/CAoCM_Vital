@@ -72,8 +72,8 @@ def submit_data():
         raise ValueError(f"Input data must have shape (8,), but got shape {data_list.shape}")
 
     # Load the models
-    model_comp_proba = joblib.load('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
-    model_icu_days = tf.keras.models.load_model('/Users/patrickschneider/Desktop/CAoCM/CAoCM_Vital/CaoCom_Model_StaticData/model_predictor/icu_predictor_model.h5')
+    model_comp_proba = joblib.load('Users/tilma/Documents/Entwicklung/CACOM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
+    model_icu_days = tf.keras.models.load_model('Users/tilma/Documents/Entwicklung/CACOM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/model_predictor/icu_predictor_model.h5')
 
     # Recompile the ICU days model if necessary
     model_icu_days.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
