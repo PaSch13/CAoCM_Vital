@@ -10,6 +10,12 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from timeseries_predict import predict_icu_days_from_data
+
 selected_file_path = ""
 selected_patient_data_path = ""
 
@@ -23,10 +29,9 @@ def submit_data():
     emop = emop_entry[0].get()
     opttype = opttype_entry[0].get()
 
-    try:
-        bmi = int(weight) / ((int(height) / 100) ** 2)
-    except:
-        bmi = 25
+
+    bmi = float(weight) / ((float(height) / 100) ** 2)
+
 
     # Prepare the data list
     data_list = [age, sex, height, weight, bmi, asa, emop, opttype]
@@ -75,11 +80,14 @@ def submit_data():
     model_comp_proba = joblib.load('Users/tilma/Documents/Entwicklung/CACOM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/gradient_boosting_model.pkl')
     model_icu_days = tf.keras.models.load_model('Users/tilma/Documents/Entwicklung/CACOM/CAoCM_Vital/CaoCom_Model_StaticData/model_classifier/model_predictor/icu_predictor_model.h5')
 
-    # Recompile the ICU days model if necessary
-    model_icu_days.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    # # Recompile the ICU days model if necessary
+    # model_icu_days.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+
+    scaler_loaded = joblib.load('CaoCom_Model_StaticData/model_classifier/scaler.pkl')
+    data_list_reduced = scaler_loaded.transform([data_list[:-1]])  # Ensure data is in a 2D array  
 
     # Make complication prediction
-    complication_possibility = model_comp_proba.predict_proba(data_list[:-1].reshape(1, -1))[0][1]*100
+    complication_possibility = model_comp_proba.predict_proba(data_list_reduced[0].reshape(1, -1))[0][1]*100
 
     # Set color based on value
     if complication_possibility < 25:
@@ -92,16 +100,6 @@ def submit_data():
     # Update the complication label
     complication_label.config(text=f"{complication_possibility:.1f} %", fg=fg)
 
-    # # Preprocess the new data
-    # scaler = StandardScaler()
-    # df_new_scaled = scaler.fit_transform(data_list.reshape(1, -1))
-
-    # ICU prediction
-    icu_days_predictions = model_icu_days.predict(data_list.reshape(1, -1)).flatten()[0] #TODO: check prediction/df_new_scaled
-    
-    # update the expected ICU days label
-    expected_icu_days_label.config(text=f"{icu_days_predictions:.1f}")
-
 
 def submit_data_files():
     global selected_file_path
@@ -112,19 +110,10 @@ def submit_data_files():
         messagebox.showerror("Error", f"Choose a valid CSV file: {e}")
         return
     
-    #TODO: Call classifier from Michael and return complication possibility
+    icu_days_predictions =  predict_icu_days_from_data(df)
 
-    # Generate a random number between 0 and 100 for complication possibility
-    complication_possibility = random.randint(0, 100)
-    complication_label.config(text=f"{complication_possibility} %")
-    
-    # Set color based on value
-    if complication_possibility < 25:
-        complication_label.config(fg="green")
-    elif complication_possibility < 50:
-        complication_label.config(fg="yellow")
-    else:
-        complication_label.config(fg="red")
+    # update the expected ICU days label
+    complication_label.config(text=f"{icu_days_predictions:.1f}")
 
 def upload_file():
     global selected_file_path
@@ -167,9 +156,9 @@ def upload_patient_data(layout1_widgets):
 
 def change_layout(event):
     selected_layout = layout_var.get()
-    if selected_layout == "Layout 1":
+    if selected_layout == "Complication":
         show_layout1()
-    elif selected_layout == "Layout 2":
+    elif selected_layout == "ICU Days":
         show_layout2()
 
 def show_layout1():
@@ -183,6 +172,8 @@ def show_layout1():
     for widget in layout1_widgets:
         widget[1].grid()
     upload_button.grid(row=8, column=2, columnspan=2, pady=entry_pady, padx=(10, 0), sticky="nsew")
+    complication_headline.config(text="Complication Probability", font=("Arial", 18))
+    complication_label.config(text="0 %", font=("Arial", 34), fg="white")
 
 def show_layout2():
     # Hide all elements for layout 1 except submit button, add upload buttons
@@ -197,6 +188,8 @@ def show_layout2():
     upload_button.grid_remove()
     selected_file_label.grid(row=2, column=0, padx=entry_padx, pady=entry_pady, sticky="e")
     selected_file_entry.grid(row=2, column=1, padx=entry_padx, pady=entry_pady, ipady=entry_ipady, sticky="nsew")
+    complication_headline.config(text="Expected ICU Days", font=("Arial", 18))
+    complication_label.config(text="0", font=("Arial", 34), fg="white")
 
 # Create the main window
 root = tk.Tk()
@@ -208,11 +201,11 @@ for i in range(10):
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 root.grid_columnconfigure(2, weight=0)  # Ensure column 2 doesn't expand
-root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fill space
+root.grid_columnconfigure(3, weight=1)  # Add a dummy column to the right to fill∂ space
 
 # Layout Selection Dropdown
-layout_var = tk.StringVar(value="Layout 1")
-layout_dropdown = tk.OptionMenu(root, layout_var, "Layout 1", "Layout 2", command=change_layout)
+layout_var = tk.StringVar(value="Complication")
+layout_dropdown = tk.OptionMenu(root, layout_var, "Complication", "ICU Days", command=change_layout)
 label = tk.Label(root, text="Algorithm:")
 label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
 layout_dropdown.grid(row=0, column=1, padx=10, pady=10, ipady=5, sticky="nsew")
@@ -290,15 +283,15 @@ complication_headline.pack(pady=10)
 complication_label = tk.Label(complication_frame, text="0 %", font=("Arial", 34), width=0, height=0)
 complication_label.pack(expand=True)
 
-# Further Details
-details_frame = tk.Frame(root, bd=2)
-details_frame.grid(row=4, column=2, rowspan=3, padx=entry_padx, pady=entry_pady, sticky="nsew")
+# # Further Details
+# details_frame = tk.Frame(root, bd=2)
+# details_frame.grid(row=4, column=2, rowspan=3, padx=entry_padx, pady=entry_pady, sticky="nsew")
 
-details_headline = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 18))
-details_headline.pack(pady=10)
+# details_headline = tk.Label(details_frame, text="Expected ICU Days:", font=("Arial", 18))
+# details_headline.pack(pady=10)
 
-expected_icu_days_label = tk.Label(details_frame, text="0", font=("Arial", 18))
-expected_icu_days_label.pack(pady=5)
+# expected_icu_days_label = tk.Label(details_frame, text="0", font=("Arial", 18))
+# expected_icu_days_label.pack(pady=5)
 
 # Widgets for layout 2
 layout2_widgets = [
